@@ -1,0 +1,41 @@
+<% include ../partials/head.ejs %>
+
+<div id="app" class="container edit-address">
+
+	<div class="row account-header">
+		<div class="col-12">
+			<ul class="breadcrumb pull-left">
+				<li><a href="https://trubrain.com/tools/account">My Account</a></li>
+				<li class="active">Pause Subscription</li>
+			</ul>
+			<span class="pull-right account-user">
+				<a :href="account + '/profile'"><i class="far fa-user"></i> {{customer.email}}</a> |
+				<a href="{{shop.url | replace: 'www.', ''}}/account/logout">Logout</a>
+			</span>
+		</div>
+	</div>
+
+	<div class="account-body subscription-options">
+		<div class="row">
+			<div class="col-12">
+				<h2>Pause Subscription</h2>
+				<p>Subscriptions may be paused for up to 8 weeks. If you change your mind later, you can email us to resume your subscription.</p>
+			</div>
+		</div>
+		<div class="row" v-if="charge !== undefined">
+			<div class="lead col-sm-12 col-md-6" style="margin-top: 25px; margin-bottom: 25px;">
+				<span>Currently scheduled for: %% charge.scheduled_at | formatDate %%</span>
+				<select v-model="charge_date">
+					<option v-for="n in 8">%% buildDates(n) %%</option>
+				</select>
+			</div>
+			<div class="col-12 subscription-actions">
+				<button class="btn large action" @click="pause($event)" data-original="Pause Subscription">Update Address</button>
+			</div>
+		</div>
+	</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
+<script src="<%= server %>/js/portal.js"></script>
+<script>initCharge(<%= charge %>)</script>

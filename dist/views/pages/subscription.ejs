@@ -1,0 +1,83 @@
+<% include ../partials/head.ejs %>
+
+<div id="app" class="container edit-subscription">
+
+	<div class="row account-header">
+		<div class="col-12">
+			<ul class="breadcrumb pull-left">
+				<li><a href="https://trubrain.com/tools/account">My Account</a></li>
+				<li class="active">Edit Subscription</li>
+			</ul>
+			<span class="pull-right account-user">
+				<a :href="account + '/profile'"><i class="far fa-user"></i> {{customer.email}}</a> |
+				<a href="{{shop.url | replace: 'www.', ''}}/account/logout">Logout</a>
+			</span>
+		</div>
+	</div>
+
+	<div class="account-body subscription-options">
+		<div class="row">
+			<div class="col-12">
+				<h2>Edit Subscription</h2>
+			</div>
+		</div>
+		<div class="row" v-if="product !== undefined">
+			<div class="col-12 col-md-3">
+				<img :src="product.featured_image" />
+			</div>
+			<div class="col-12 col-md-3">
+				<div class="lead" v-for="(option, index) in product.options" v-if="checkOption(option)">
+					<span v-text="option"></span>
+					<select @change="changeVariant($event, index)" v-model="variant[index]">
+						<option v-for="value in options1" v-if="(index + 1) == 1 && banned_variants.indexOf(value) == -1">%% value %%</option>
+						<option v-for="value in options2" v-if="(index + 1) == 2 && banned_variants.indexOf(value) == -1">%% value %%</option>
+						<option v-for="value in options3" v-if="(index + 1) == 3 && banned_variants.indexOf(value) == -1">%% value %%</option>
+					</select>
+				</div>
+				<div class="lead">
+					<span>Price</span>
+					$%%subscription.price | formatPrice%%
+					<template v-if="subscription.order_interval_frequency == 1">%% subscription.order_interval_unit %%ly</template>
+					<template v-else>every %% subscription.order_interval_frequency %% %% subscription.order_interval_unit %%s</template>
+				</div>
+			</div>
+			<div class="col-12 col-md-5 offset-md-1">
+				<div class="row">
+					<div class="col-6">
+						<div class="lead">
+							<span>Next bill date</span>
+							<template v-for="charge in charges" v-if="charge.line_items[0].subscription_id == subscription.id">
+								%% charge.scheduled_at | formatDate %% <br>
+								<small><a :href="account + '/charges/' + charge.id">(edit)</a></small>
+							</template>
+						</div>
+					</div>
+					<div class="col-6">
+						<div class="lead">
+							<span>Shipping</span>
+							%% address.address1 %% %% address.address2 %% <br>
+							%% address.city %%, %% address.province %%, %% address.zip %% <br>
+							<small><a :href="account + '/addresses/' + address.id">(edit)</a></small>
+						</div>
+					</div>
+				</div>
+				<div class="row subscription-actions">
+					<div class="col-12">
+						<button class="btn large action" data-original="Update Subscription" data-loading="Updating..." @click="updateSubscription($event)">Update Subscription</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
+<script src="<%= server %>/js/portal.js"></script>
+<script>
+	var products = []
+	{% for product in collections.products.products %}
+	products.push({{product | json}})
+	{% endfor %}
+	// console.log(products)
+</script>
+<script>initSub(<%= sub %>, {{customer.id}}, products)</script>

@@ -1,0 +1,82 @@
+<% include ../partials/head.ejs %>
+
+<div id="app" class="container edit-subscription">
+
+	<div class="row account-header">
+		<div class="col-12">
+			<ul class="breadcrumb pull-left">
+				<li><a href="https://trubrain.com/tools/account">My Account</a></li>
+				<li class="active">Cancel Subscription</li>
+			</ul>
+			<span class="pull-right account-user">
+				<a :href="account + '/profile'"><i class="far fa-user"></i> {{customer.email}}</a> |
+				<a href="{{shop.url | replace: 'www.', ''}}/account/logout">Logout</a>
+			</span>
+		</div>
+	</div>
+
+	<div class="account-body subscription-options">
+		<div class="row col-12">
+			<h2>Cancel Subscription</h2>
+		</div>
+		<div class="row">
+			<div class="col-12">
+				<transition name="fade">
+					<div class="cancellation-options step1" v-if="step == 1">
+						<template v-for="(option, optionNdx) in cancellation_options">
+							<template v-for="reason in option.reasons">
+								<div class="cancellation-option">
+									<input type="radio" :id="reason.replace(' ', '')" v-bind:value="reason" v-model="cancellation.reason" @click="cancellation.category = option.category, cancellation.id = option.id" style="-webkit-appearance: radio">
+									<label :for="reason.replace(' ','')" v-text="reason"></label>
+								</div>
+							</template>
+						</template>
+						<button class="btn large action primary" v-if="cancellation.reason !== ''" @click="step23">Next</button>
+					</div>
+				</transition>
+				<transition name="fade">
+					<div class="save-options step2" v-if="step == 2">
+						<template v-if="cancellation.id == 1">
+							<div class="row">
+								<div class="col-12">
+									<p class="save-text" v-text="cancellation_options[cancellation.id].save_text"></p>
+								</div>
+								<div class="col-12 col-md-6" v-for="save in cancellation_options[cancellation.id].save_options">
+									<img :src="save.image" />
+									<span class="save-product-title" v-text="save.name"></span>
+									<span class="save-product-price" v-text="'$' + (save.price).toFixed(2)"></span>
+									<button class="btn primary action" @click="saveSubVariant(save)">Yes please</button>
+								</div>
+								<div class="col-12 nothanks">
+									<a @click="step = 3">No thanks, please cancel my subscription</a>
+								</div>
+							</div>
+						</template>
+						<template v-if="cancellation.id == 3">
+							<div class="row">
+								<div class="col-12">
+									<p class="save-text" v-text="cancellation_options[cancellation.id].save_text"></p>
+								</div>
+								<div class="col pause-save" v-for="save in cancellation_options[cancellation.id].save_options">
+									Pause my subscription for <span> %% save %% </span> months.
+								</div>
+								<div class="col-12 nothanks">
+									<a @click="step = 3">No thanks, please cancel my subscription</a>
+								</div>
+							</div>
+						</template>
+					</div>
+				</transition>
+				<transition name="fade">
+					<div class="step3" v-if="step == 3">
+						step3
+					</div>
+				</transition>
+			</div>
+		</div>
+	</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
+<script src="<%= server %>/js/portal.js"></script>
+<script>initCancel(<%= sub %>)</script>

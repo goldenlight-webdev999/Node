@@ -1,0 +1,41 @@
+<% include ../partials/head.ejs %>
+
+<div id="app" class="fluid-container">
+
+<div class="row">
+	<div class="col-12 header-links">
+		<div class="header-link">
+			<a href="https://enzo-customers.herokuapp.com/public">Home</a>
+		</div>
+		<div class="header-link">
+			<a href="https://enzo-customers.herokuapp.com/public/customers/create">Create</a>
+		</div>
+		<div class="header-link">
+			<a href="https://4wtc7j815g.execute-api.us-east-1.amazonaws.com/dev/fabrics" target="_blank">Generate Fabrics</a>
+		</div>
+		<div class="header-link">
+			<a href="https://duj24n7884.execute-api.us-east-1.amazonaws.com/dev/checkproducts" target="_blank">Generate Products</a>
+		</div>
+	</div>
+</div>
+
+
+	<template v-if="customers.length > 0">
+		<div id="customers">
+			<v-client-table :data="customers" :columns="columns" :options="options">
+				<a slot="last_order_name" slot-scope="props" target="_blank" :href="'https://enzo-custom.myshopify.com/admin/orders/'+ props.row.last_order_id">%% props.row.last_order_name %%</a>
+				<a slot="id" slot-scope="props" target="" :href="'/public/customers/'+ props.row.id">Edit</a>
+			</v-client-table>
+		</div>
+	</template>
+	<template v-else>
+		<div id="customers">
+			Loading data...
+		</div>
+	</template>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
+<script src="<%= server %>/js/portal.js"></script>
+<script>initHome()</script>

@@ -1,0 +1,172 @@
+<% include ../partials/head.ejs %>
+
+<style>
+#app {
+	font-family: 'Roboto', sans-serif;
+	font-size: .85em;
+}
+</style>
+
+<div id="app" class="container">
+
+	<div class="row steps">
+		<div class="col step" v-for="(step, index) in config.steps" :class="{active: config.step == (index + 1)}">
+			<a @click="config.step = (index + 1)" v-text="step"></a>
+		</div>
+	</div>
+
+	<div class="row md-layout md-gutter" v-if="config.step == 1">
+		<!-- <customer-info area="customer" :customer="customer" :fields="customer_fields"> -->
+			%% customer.addresses[0] %%
+			<div class="field-group">
+				<legend class="col-12">Basic Information</legend>
+				<div class="col-12 field-group-item" v-for="field in customer_fields">
+					<label v-text="field.title"></label> <br />
+					<input type="text" v-model="customer[field.key]" :placeholder="field.title" />
+				</div>
+
+				<div class="col-12">
+					<label for="">Company</label><br />
+					<input type="text" :placeholder="'Company'" v-model="customer.addresses[0].company">
+				</div>
+			</div>
+			<div class="field-group">
+				<legend class="col-12">Address Information</legend>
+				<div class="col-12 field-group-item" v-for="(field, key) in customer.addresses[0]" v-if="checkField(key)">
+					<label>%% key | printKey %%</label> <br />
+					<input type="text" :placeholder="key | printKey" v-model="customer.addresses[0][key]" />
+				</div>
+			</div>
+			<div class="field-group">
+				<legend class="col-12">Meta Information</legend>
+				<div class="col-12 field-group-item" v-for="(field, key) in customer.addresses[0]" v-if="checkField(key)">
+					<label>%% key | printKey %%</label> <br />
+					<input type="text" :placeholder="key | printKey" v-model="customer.addresses[0][key]" />
+				</div>
+			</div>
+		</div>
+
+		<script type="text/x-template" id="customerInfoComponent">
+			<div>
+				<div class="col-12" v-for="field in fields">
+					<label v-text="field.title"></label> <br />
+					<input type="text" v-model="customer.first_name" />
+				</div>
+			</div>
+		</script>
+
+		<div class="row md-layout md-gutter" v-if="config.step == 2">
+			<h2 class="col-12">Create customer</h2>
+			<legend class="col-12">Measurements</legend>
+			<div class="form-group col-6 col-md-4" v-for="mf in customer.metafields" v-if="mf.namespace == 'ec_measurements'">
+				<md-field>
+					<label>%% mf._title %%</label>
+					<md-input v-model="mf.value"></md-input>
+				</md-field>
+			</div>
+
+			<legend class="col-12">Posture</legend>
+			<div class="form-group col-6 col-md-4" v-for="mf in customer.metafields" v-if="mf.namespace == 'ec_posture'">
+				<md-field>
+					<label for="Showroom">%% mf._title %%</label>
+					<md-select v-model="mf.value" name="source" id="showroom">
+						<md-option v-for="(option, index) in mf._options" v-text="option" :value="option" :key="index"></md-option>
+					</md-select>
+				</md-field>
+			</div>
+		</div>
+
+		<div class="md-layout" v-show="config.step == 3">
+			<sample-selector :sample="this.sample.jacket" :samples="this.samples.jackets" item="jacket" @setsample="setSample"></sample-selector>
+			<table-component :sample="this.sample.jacket" :samples="this.samples.jackets"></table-component>
+			<garment-component :metafields="samples.jackets.meta" garment="ec_jacket" @setmetafield="setMetafield"></garment-component>
+		</div>
+
+		<div class="md-layout" v-show="config.step == 4">
+			<sample-selector :sample="sample.pant" :samples="mfv2.pants.config" item="pant" @setsample="setSample"></sample-selector>
+			<table-component :sample="sample.pant" :samples="mfv2.pants.config"></table-component>
+			<garment-component :metafields="mfv2.pants.meta" garment="ec_pant" @setmetafield="setMetafield"></garment-component>
+		</div>
+
+		<div class="md-layout" v-show="config.step == 5">
+			<sample-selector :sample="sample.vest" :samples="mfv2.vests.config" item="vest" @setsample="setSample"></sample-selector>
+			<table-component :sample="sample.vest" :samples="mfv2.vests.config"></table-component>
+			<garment-component :metafields="mfv2.vests.meta" garment="ec_vest" @setmetafield="setMetafield"></garment-component>
+		</div>
+
+		<div class="md-layout" v-show="config.step == 6">
+			<sample-selector :sample="sample.shirt" :samples="mfv2.shirts.config" item="shirt" @setsample="setSample"></sample-selector>
+			<table-component :sample="sample.shirt" :samples="mfv2.shirts.config"></table-component>
+			<garment-component :metafields="mfv2.shirts.meta" garment="ec_shirt" @setmetafield="setMetafield"></garment-component>
+		</div>
+
+	</div>
+
+	<script type="text/x-template" id="garmentComponent">
+		<div class="garment-meta">
+			<div class="row garment-item" v-for="(mf, index) in metafields">
+				<div class="col-2 garment-item-title">
+					%% mf._title %%
+				</div>
+				<div class="col-12">
+					<template v-if="mf._type == 'dropdown'">
+						<select v-model="mf.value">
+							<option value="default">Default</option>
+							<option v-for="(option, index) in mf._options" :value="option" v-text="option"></option>
+						</select>
+					</template>
+					<template v-if="mf._type == 'textarea'">
+						<textarea :name="mf.namespace + '_notes'" v-model="mf.value" id="" cols="50" rows="5"></textarea>
+					</template>
+				</div>
+			</div>
+		</div>
+	</script>
+
+	<script type="text/x-template" id="sampleSelectorComponent">
+		<div class="row tryonarea">
+			<div class="col-12">
+				<p class="lead">
+					Select the %% item %% that the customer tried on:
+				</p>
+			</div>
+			<div class="col-12">
+				<select @change="myMethod($event, sample, item)">
+					<option>Select Sample</option>
+					<option v-for="(name, index) in samples.names" :value="index" v-text="name"></option>
+				</select>
+			</div>
+			<div class="col-12" style="margin-top: 20px;">
+				<p class="lead">
+					Adjust the customer's measurements below:
+				</p>
+			</div>
+		</div>
+	</script>
+
+	<script type="text/x-template" id="tableComponent">
+		<div class="tablecontainer container">
+			<div class="tableheader">
+				<div class="row">
+					<div class="col-3"></div>
+					<div class="col-3">Try-On Size Measurement</div>
+					<div class="col-3">Difference from Garment</div>
+					<div class="col-3">Final</div>
+				</div>
+			</div>
+			<div class="tableoptions" v-for="(option,key,index) in samples" v-if="index !== 0 && key !== 'meta'">
+				<div class="row">
+					<div class="col-3">%% key | printKey %%</div>
+					<div class="col-3" v-if="sample == 99">Select sample</div>
+					<div class="col-3" v-else>%% samples[key][sample] %%</div>
+					<div class="col-3">calculator</div>
+					<div class="col-3">final</div>
+				</div>
+			</div>
+		</div>
+	</script>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
+	<script src="<%= server %>/js/portal.js"></script>
+	<script>newCustomer()</script>

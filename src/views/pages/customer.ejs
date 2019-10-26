@@ -1,0 +1,460 @@
+<% include ../partials/head.ejs %>
+
+<div id="app" class="fluid-container create-customer">
+
+	<div class="row" v-if="modal.show == false">
+		<div class="col-12 header-links">
+			<div class="header-link">
+				<a href="https://enzo-customers.herokuapp.com/public">Home</a>
+			</div>
+			<div class="header-link">
+				<a href="https://enzo-customers.herokuapp.com/public/customers/create">Create</a>
+			</div>
+			<div class="header-link">
+				<a href="https://4wtc7j815g.execute-api.us-east-1.amazonaws.com/dev/fabrics" target="_blank">Generate Fabrics</a>
+			</div>
+			<div class="header-link">
+				<a href="https://duj24n7884.execute-api.us-east-1.amazonaws.com/dev/checkproducts" target="_blank">Generate Products</a>
+			</div>
+		</div>
+	</div>
+
+	<nav class="navbar navbar-expand-lg navbar-light bg-light" v-if="modal.show == false">
+		<div class="collapse navbar-collapse" id="navbarSupportedContent">
+			<ul class="navbar-nav mr-auto">
+				<li class="nav-item" v-for="(step, index) in config.steps" :class="{active: config.step == (index + 1)}">
+					<a class="nav-link" href="#" @click="changeStep(index)" v-text="step"></a>
+				</li>
+				<li class="nav-item create">
+					<button class="btn btn-primary" @click="(edit == false) ? edit = true : update()" v-text="(edit == false) ? 'Edit' : 'Save'" :class="{'btn-success': edit == true}"></button>
+				</li>
+			</ul>
+		</div>
+	</nav>
+
+	<div class="step step1" v-if="config.step == 1">
+		<template v-if="modal.show == true">
+			<transition name="fade">
+				<div id="ordermodal">
+					<div class="container">
+						<div class="row">
+							<h2 class="col-12 text-center" v-text="'Enzo Custom Order: ' + modal.order.name"></h2>
+						</div>
+						<div class="row">
+							<div class="col-6">
+								<h3>Order Information</h3>
+								Date: %% modal.order.created_at | filterDate %%<br />
+								Name: %% modal.order.billing_address.name %%<br />
+								Email: %% modal.order.billing_address.name %%
+							</div>
+							<div class="col-6">
+								<h3>Shipping Information</h3>
+								<p>
+									%% modal.order.shipping_address.name %%<br />
+									<template v-if="modal.order.shipping_address.company !== null">
+										%% modal.order.shipping_address.company %%<br />
+									</template>
+									%% modal.order.shipping_address.address1 %% %% modal.order.shipping_address.address2 %%<br />
+									%% modal.order.shipping_address.city %%, %% modal.order.shipping_address.province %%, %% modal.order.shipping_address.zip %%
+								</p>
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-12">
+								<h3>Line Items</h3>
+								<div class="line-item" v-for="item in modal.order.line_items">
+									<table class="table table-striped table-bordered">
+										<tbody>
+											<tr>
+												<th class="col-12" colspan="2">Item Details</th>
+											</tr>
+											<tr>
+												<td>Product</td>
+												<td v-text="item.title"></td>
+											</tr>
+											<tr>
+												<td>Quantity</td>
+												<td v-text="item.quantity"></td>
+											</tr>
+											<tr>
+												<th class="col-12" colspan="2">Item Selections</th>
+											</tr>
+											<tr v-for="prop in item.properties" v-if="prop.name !== '_image'">
+												<td v-text="prop.name"></td>
+												<td v-text="prop.value"></td>
+											</tr>
+											<tr>
+												<th class="col-12" colspan="2">Product Measurements</th>
+											</tr>
+											<template v-if="item.title.toLowerCase().indexOf('pants') !== -1">
+												<tr v-for="(field,key) in customer_pants.fields">
+													<td v-text="key"></td>
+													<td v-text="field"></td>
+												</tr>
+												<tr v-for="(field,key) in customer_pants.meta">
+													<td v-text="field.key"></td>
+													<td v-text="field.value"></td>
+												</tr>
+											</template>
+											<template v-if="item.title.toLowerCase().indexOf('vest') !== -1">
+												<tr v-for="(field,key) in customer_vest.fields">
+													<td v-text="key"></td>
+													<td v-text="field"></td>
+												</tr>
+												<tr v-for="(field,key) in customer_vest.meta">
+													<td v-text="field.key"></td>
+													<td v-text="field.value"></td>
+												</tr>
+											</template>
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+						<div class="row text-center">
+							<button class="btn btn-primary" @click="printPage()">Print</button>
+							<button class="btn btn-warning" @click="modal.show = false">Close</button>
+						</div>
+					</div>
+				</div>
+			</transition>
+		</template>
+		<template v-else>
+			<div class="row">
+				<div class="col-12 col-md-6 info-group">
+					<h3>Customer Information</h3>
+					<div class="row">
+						<div class="form-group col-12 col-md-6" v-for="field in customer_fields">
+							<label :for="field.key" v-text="field.title"></label>
+							<input :disabled="edit == false" :type="field.type" class="form-control" :id="field.key" v-model="customer[field.key]">
+						</div>
+					</div>
+				</div>
+
+				<div class="col-12 col-md-6 info-group">
+					<h3>Customer Address</h3>
+					<div class="row">
+						<div class="form-group col-12 col-md-6" v-for="field in customer_address_fields" v-if="field.key !== 'country'">
+							<label :for="field.key" v-text="field.title"></label>
+							<input :disabled="edit == false" type="text" class="form-control" :id="field.key" v-model="customer.addresses[0][field.key]">
+						</div>
+					</div>
+				</div>
+
+				<div class="col-12 col-md-6 info-group">
+					<h3>Add'l Info</h3>
+					<div class="row">
+						<div class="form-group col-12 col-md-6" v-for="field in customer_meta">
+							<template v-if="field.type == 'dropdown'">
+								<label :for="field.key" v-text="field.title"></label>
+								<select :disabled="edit == false" :id="field.key" class="form-control" v-model="field.value">
+									<option value="">-- Select %% field.title %% --</option>
+									<option v-for="option in field.options" :value="option" v-text="option"></option>
+								</select>
+							</template>
+							<template v-else>
+								<label :for="field.key" v-text="field.title"></label>
+								<input :disabled="edit == false" :type="field.type" class="form-control" :id="field.key" v-model="customer.addresses[0][field.key]">
+							</template>
+						</div>
+						<div class="form-group col-12">
+							<label for="customerNote">Note</label>
+							<textarea :disabled="edit == false" class="form-control" name="customerNote" id="customerNote" cols="30" rows="5" v-model="customer.note" :placeholder="'Customer note goes here...'"></textarea>
+						</div>
+						<div class="form-check col-12 col-md-6">
+							<input :disabled="edit == false" class="form-check-input" type="checkbox" :value="customer.accepts_marketing" id="defaultCheck1" v-model="customer.accepts_marketing">
+							<label class="form-check-label" for="defaultCheck1">
+								Customer Accepts Promotional Emails?
+							</label>
+						</div>
+					</div>
+				</div>
+
+				<div class="col-12 col-md-6 info-group">
+					<h3>Customer Orders</h3>
+					<div class="row">
+						<div class="form-group col-12 col-md-6">
+							<template v-if="orders.length == 0">
+								<p>This customer has no orders.</p>
+							</template>
+							<template v-else>
+								<ul class="orders list-group">
+									<li class="order list-group-item" v-for="order in orders">
+										<a @click="buildOrderPage(order), modal.show = true" data-toggle="modal" data-target="#ordermodal" style="color: blue;">%% order.name %%</a> - %% order.created_at.substring(0,10) %%
+									</li>
+								</ul>
+							</template>
+						</div>
+					</div>
+				</div>
+
+			</div>
+		</template>
+	</div>
+
+	<div class="step step2" v-if="config.step == 2">
+		<div class="row">
+			<div class="col-12 col-md-6 info-group">
+				<h3>Customer Measurements</h3>
+				<div class="row">
+					<div class="form-group col-12 col-lg-6" v-for="(field,index) in customer_measurements">
+						<label :for="field.key" v-text="field.title"></label>
+						<input :disabled="edit == false" :type="field.type" class="form-control" :id="field.key" v-model="field.value">
+					</div>
+				</div>
+			</div>
+			<div class="col-12 col-md-6 info-group">
+				<h3>Customer Posture</h3>
+				<div class="row">
+					<div class="form-group col-12 col-lg-6" v-for="(field,index) in customer_posture">
+						<label :for="field.key" v-text="field.title"></label>
+						<select :disabled="edit == false" :id="field.key" class="form-control" v-model="field.value">
+							<option value="">-- Select %% field.title %% --</option>
+							<option v-for="option in field._options" :value="option" v-text="option"></option>
+						</select>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="step step3" v-if="config.step == 3">
+		<div class="row">
+			<div class="col-12 info-group">
+				<h3>Customer Jacket Measurements</h3>
+				<p>
+					Select the sample that the customer tried on:
+					<select :disabled="edit == false" v-model="customer_jacket.sample" @change="updateSample(customer_jacket)">
+						<option value="99">-- Select Sample --</option>
+						<option v-for="(name, index) in customer_jacket.config.names" :value="index" v-text="name"></option>
+					</select>
+				</p>
+				<table class="table table-bordered table-hover">
+					<tr>
+						<th scope="col"></th>
+						<th scope="col">Try-On Size Measurement</th>
+						<th scope="col">Different From Garment</th>
+						<th scope="col">Final</th>
+					</tr>
+					<tr v-for="(field, key, index) in customer_jacket.fields">
+						<td>%% key %%</td>
+						<td>%% (customer_jacket.sample == 99) ? 'Select Sample' : customer_jacket.config[key][customer_jacket.sample] %%</td>
+						<td><calculator increment="0.25" :sample="customer_jacket.sample" :index="key" item="customer_jacket" :key="index" v-if="calcReset == false"></calculator></td>
+						<td class="form-group"><input :disabled="edit == false" class="form-control" v-model.number="customer_jacket.fields[key]" type="text"></td>
+					</tr>
+				</table>
+				<div class="row">
+					<div class="info-group col-12">
+						<h3>Jacket Pattern Adjustments</h3>
+					</div>
+					<template v-for="(field,key,index) in customer_jacket.meta">
+						<template v-if="field._type == 'dropdown'">
+							<div class="form-group col-12 col-md-6">
+								<label :for="field.key" v-text="field._title"></label>
+								<select :disabled="edit == false" :id="field.key" class="form-control" v-model="field.value">
+									<option value="default">-- Select %% field._title %% --</option>
+									<option v-for="option in field._options" :value="option" v-text="option"></option>
+								</select>
+							</div>
+						</template>
+						<template v-if="field._type == 'textarea'">
+							<div class="form-group col-12">
+								<label for="jacketNote">Note</label>
+								<textarea :disabled="edit == false" class="form-control" name="jacketNote" id="customerNote" cols="30" rows="5" v-model="field.value" :placeholder="'Note goes here...'"></textarea>
+							</div>
+						</template>
+					</template>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="step step4" v-if="config.step == 4">
+		<div class="row">
+			<div class="col-12 info-group">
+				<h3>Customer Pants Measurements</h3>
+				<p>
+					Select the sample that the customer tried on:
+					<select :disabled="edit == false" v-model="customer_pants.sample" @change="updateSample(customer_pants)">
+						<option value="99">-- Select Sample --</option>
+						<option v-for="(name, index) in customer_pants.config.names" :value="index" v-text="name"></option>
+					</select>
+				</p>
+				<table class="table table-bordered table-hover">
+					<tr>
+						<th scope="col"></th>
+						<th scope="col">Try-On Size Measurement</th>
+						<th scope="col">Different From Garment</th>
+						<th scope="col">Final</th>
+					</tr>
+					<tr v-for="(field, key, index) in customer_pants.fields">
+						<td>%% key %%</td>
+						<td>%% (customer_pants.sample == 99) ? 'Select Sample' : customer_pants.config[key][customer_pants.sample] %%</td>
+						<td><calculator increment="0.25" :sample="customer_pants.sample" :index="key" item="customer_pants" :key="index" v-if="calcReset == false"></calculator></td>
+						<td class="form-group"><input :disabled="edit == false" class="form-control" v-model.number="customer_pants.fields[key]" type="text"></td>
+					</tr>
+				</table>
+				<div class="row">
+					<div class="info-group col-12">
+						<h3>Pants Pattern Adjustments</h3>
+					</div>
+					<template v-for="(field,key,index) in customer_pants.meta">
+						<template v-if="field._type == 'dropdown'">
+							<div class="form-group col-12 col-md-6">
+								<label :for="field.key" v-text="field._title"></label>
+								<select :disabled="edit == false" :id="field.key" class="form-control" v-model="field.value">
+									<option value="default">-- Select %% field._title %% --</option>
+									<option v-for="option in field._options" :value="option" v-text="option"></option>
+								</select>
+							</div>
+						</template>
+						<template v-if="field._type == 'textarea'">
+							<div class="form-group col-12">
+								<label for="pantsNote">Note</label>
+								<textarea :disabled="edit == false" class="form-control" name="pantsNote" id="customerNote" cols="30" rows="5" v-model="field.value" :placeholder="'Note goes here...'"></textarea>
+							</div>
+						</template>
+					</template>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="step step5" v-if="config.step == 5">
+		<div class="row">
+			<div class="col-12 info-group">
+				<h3>Customer Vest Measurements</h3>
+				<p>
+					Select the sample that the customer tried on:
+					<select :disabled="edit == false" v-model="customer_vest.sample" @change="updateSample(customer_vest)">
+						<option value="99">-- Select Sample --</option>
+						<option v-for="(name, index) in customer_vest.config.names" :value="index" v-text="name"></option>
+					</select>
+				</p>
+				<table class="table table-bordered table-hover">
+					<tr>
+						<th scope="col"></th>
+						<th scope="col">Try-On Size Measurement</th>
+						<th scope="col">Different From Garment</th>
+						<th scope="col">Final</th>
+					</tr>
+					<tr v-for="(field, key, index) in customer_vest.fields">
+						<td>%% key %%</td>
+						<td>%% (customer_vest.sample == 99) ? 'Select Sample' : customer_vest.config[key][customer_vest.sample] %%</td>
+						<td><calculator increment="0.25" :sample="customer_vest.sample" :index="key" item="customer_vest" :key="index" v-if="calcReset == false"></calculator></td>
+						<td class="form-group"><input :disabled="edit == false" class="form-control" v-model.number="customer_vest.fields[key]" type="text"></td>
+					</tr>
+				</table>
+				<div class="row">
+					<div class="info-group col-12">
+						<h3>Vest Pattern Adjustments</h3>
+					</div>
+					<template v-for="(field,key,index) in customer_vest.meta">
+						<template v-if="field._type == 'dropdown'">
+							<div class="form-group col-12 col-md-6">
+								<label :for="field.key" v-text="field._title"></label>
+								<select :disabled="edit == false" :id="field.key" class="form-control" v-model="field.value">
+									<option value="default">-- Select %% field._title %% --</option>
+									<option v-for="option in field._options" :value="option" v-text="option"></option>
+								</select>
+							</div>
+						</template>
+						<template v-if="field._type == 'textarea'">
+							<div class="form-group col-12">
+								<label for="pantsNote">Note</label>
+								<textarea :disabled="edit == false" class="form-control" name="pantsNote" id="customerNote" cols="30" rows="5" v-model="field.value" :placeholder="'Note goes here...'"></textarea>
+							</div>
+						</template>
+					</template>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="step step6" v-if="config.step == 6">
+		<div class="row">
+			<div class="col-12 info-group">
+				<h3>Customer Shirt Measurements</h3>
+				<p>
+					Select the sample that the customer tried on:
+					<select :disabled="edit == false" v-model="customer_shirt.sample" @change="updateSample(customer_shirt)">
+						<option value="99">-- Select Sample --</option>
+						<option v-for="(name, index) in customer_shirt.config.names" :value="index" v-text="name"></option>
+					</select>
+				</p>
+				<table class="table table-bordered table-hover">
+					<tr>
+						<th scope="col"></th>
+						<th scope="col">Try-On Size Measurement</th>
+						<th scope="col">Different From Garment</th>
+						<th scope="col">Final</th>
+					</tr>
+					<tr v-for="(field, key, index) in customer_shirt.fields">
+						<td>%% key %%</td>
+						<td>%% (customer_shirt.sample == 99) ? 'Select Sample' : customer_shirt.config[key][customer_shirt.sample] %%</td>
+						<td><calculator increment="0.25" :sample="customer_shirt.sample" :index="key" item="customer_shirt" :key="index" v-if="calcReset == false"></calculator></td>
+						<td class="form-group"><input :disabled="edit == false" class="form-control" v-model.number="customer_shirt.fields[key]" type="text"></td>
+					</tr>
+				</table>
+				<div class="row">
+					<div class="info-group col-12">
+						<h3>Shirt Pattern Adjustments</h3>
+					</div>
+					<template v-for="(field,key,index) in customer_shirt.meta">
+						<template v-if="field._type == 'dropdown'">
+							<div class="form-group col-12 col-md-6">
+								<label :for="field.key" v-text="field._title"></label>
+								<select :disabled="edit == false" :id="field.key" class="form-control" v-model="field.value">
+									<option value="default">-- Select %% field._title %% --</option>
+									<option v-for="option in field._options" :value="option" v-text="option"></option>
+								</select>
+							</div>
+						</template>
+						<template v-if="field._type == 'textarea'">
+							<div class="form-group col-12">
+								<label for="pantsNote">Note</label>
+								<textarea :disabled="edit == false" class="form-control" name="pantsNote" id="customerNote" cols="30" rows="5" v-model="field.value" :placeholder="'Note goes here...'"></textarea>
+							</div>
+						</template>
+					</template>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="step step7" v-if="config.step == 7">
+		<div class="row">
+			<div class="col-12 info-group">
+				<h3>Customer Overcoat Measurements</h3>
+				<table class="table table-bordered table-hover">
+					<tr>
+						<th scope="col"></th>
+						<th scope="col">Final</th>
+					</tr>
+					<tr v-for="(field, key, index) in customer_overcoat.fields">
+						<td>%% key %%</td>
+						<td class="form-group"><input :disabled="edit == false" class="form-control" v-model="customer_overcoat.fields[key]" type="text"></td>
+					</tr>
+				</table>
+			</div>
+		</div>
+	</div>
+
+</div>
+
+<script type="text/x-template" id="calculatorComponent">
+	<div class="row">
+		<template v-if="sample == 99"></template>
+		<template v-else>
+			<span class="col-4"><i class="far fa-minus-square" @click="decrease()"></i></span>
+			<span class="col-4" v-text="adjustment"></span>
+			<span class="col-4"><i class="far fa-plus-square" @click="increase()"></i></span>
+		</template>
+	</div>
+</script>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
+<script src="<%= server %>/js/portal.js"></script>
+<script>initCustomer('<%- customer %>')</script>
